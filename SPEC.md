@@ -189,7 +189,7 @@ when using the cosine space, so the check is: `(1 - distance) >= 0.85`.
 
 | Constant | Default | Description |
 |----------|---------|-------------|
-| `MEMORY_TOP_K` | `5` | Number of memories retrieved per turn |
+| `MEMORY_TOP_K` | `15` | Number of memories retrieved per turn |
 | `MEMORY_COLLECTION` | `"companion_memories"` | ChromaDB collection name |
 | `CHROMA_DIR` | `data/memories/` | On-disk path for ChromaDB persistence |
 

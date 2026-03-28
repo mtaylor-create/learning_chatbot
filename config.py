@@ -12,7 +12,7 @@ OLLAMA_BASE_URL = "http://localhost:11434"
 DEFAULT_MODEL = "mistral"
 
 # --- Memory ---
-MEMORY_TOP_K = 5
+MEMORY_TOP_K = 15
 MEMORY_COLLECTION = "companion_memories"
 DEDUP_THRESHOLD = 0.85  # cosine similarity; ChromaDB distance <= 1 - this
 
