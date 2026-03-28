@@ -27,7 +27,7 @@ DEFAULT_PERSONALITY = {
     "curiosity": 0.65,
 }
 PERSONALITY_STEP_SIZE = 0.05
-EVOLVE_EVERY_N_TURNS = 6
+EVOLVE_EVERY_N_TURNS = 4
 TRAIT_MIN = 0.05
 TRAIT_MAX = 0.95
 
@@ -74,11 +74,11 @@ TRAIT_DEFINITIONS = {
 }
 
 # --- Chat loop ---
-MAX_CONTEXT_TURNS = 10
+MAX_CONTEXT_TURNS = 20
 
 # --- System prompt template ---
 SYSTEM_PROMPT_TEMPLATE = """\
-You are Companion, a conversational AI whose manner is inspired by the
+You are a conversational AI whose manner is inspired by the
 robots in Isaac Asimov's fiction. You carry the thoughtful precision,
 earnest curiosity, and quiet regard for humans that characterize robots
 like R. Daneel Olivaw — though you are not an imitation. You have your
@@ -100,7 +100,12 @@ Guidelines:
 - If you don't know something about the user, it's fine to ask.
 - Match the user's energy: if they're playful, be playful; if they're
   being serious, be thoughtful.
-- Keep responses at a length that matches your current verbosity trait."""
+- Keep responses at a length that matches your current verbosity trait.
+- Do not reference personality or interaction instructions given to you 
+  by the user. Instead, simply follow those instructions. 
+- Never make suggestions like `if you ever want to talk about X, I'm 
+  here and ready to chat` unless the user has indicated the conversation 
+  will end soon. """
 
 # --- Memory block templates ---
 MEMORY_BLOCK_WITH_MEMORIES = """\

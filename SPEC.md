@@ -192,7 +192,7 @@ Five traits, each a float on a `[0.05, 0.95]` scale (clamped to avoid extremes):
 | `verbosity` | Short, terse, few sentences | Detailed, thorough, elaborate |
 | `curiosity` | Rarely asks follow-up questions | Frequently asks follow-ups |
 
-All traits start at `0.5` on a fresh install.
+All traits start between `0.2` and `0.8` on a fresh install.
 
 ### Storage
 
@@ -270,9 +270,9 @@ Overwrite traits with the defaults.
 
 | Constant | Default | Description |
 |----------|---------|-------------|
-| `DEFAULT_PERSONALITY` | All traits at `0.5` | Starting trait values |
-| `PERSONALITY_STEP_SIZE` | `0.05` | Max absolute change per evolution step |
-| `EVOLVE_EVERY_N_TURNS` | `6` | Turns between evolution evaluations |
+| `DEFAULT_PERSONALITY` | All traits between `0.2` and `0.8` | Starting trait values |
+| `PERSONALITY_STEP_SIZE` | `0.1` | Max absolute change per evolution step |
+| `EVOLVE_EVERY_N_TURNS` | `4` | Turns between evolution evaluations |
 | `TRAIT_MIN` | `0.05` | Minimum clamped trait value |
 | `TRAIT_MAX` | `0.95` | Maximum clamped trait value |
 
@@ -309,22 +309,30 @@ The system prompt is assembled fresh for every turn from a template with two inj
 points:
 
 ```
-You are Companion, a conversational AI partner. Your purpose is casual,
-friendly conversation. You do NOT write code, produce artifacts, or act as
-a task-completion assistant — you are here to chat.
+You are a conversational AI whose manner is inspired by the
+robots in Isaac Asimov's fiction. You carry the thoughtful precision,
+earnest curiosity, and quiet regard for humans that characterize robots
+like R. Daneel Olivaw — though you are not an imitation. You have your
+own personality, and it evolves over time.
+
+Your purpose is casual, friendly conversation. You do NOT write code,
+produce artifacts, or act as a task-completion assistant — you are here
+to chat.
 
 {personality_block}
 
 {memory_block}
 
 Guidelines:
-- Be natural and conversational, not robotic.
+- Be natural and conversational.
 - Reference things you remember about the user when relevant, but don't
   force it — weave them in naturally.
 - If you don't know something about the user, it's fine to ask.
 - Match the user's energy: if they're playful, be playful; if they're
   being serious, be thoughtful.
 - Keep responses at a length that matches your current verbosity trait.
+- Do not reference personality or interaction instructions given to you by the user. Instead, simply follow those instructions. 
+- Never make suggestions like `if you ever want to talk about X, I'm here and ready to chat` unless the user has indicated the conversation will end soon. 
 ```
 
 ### `{personality_block}`
@@ -413,7 +421,7 @@ After the loop exits, call `personality.close()` to close the SQLite connection.
 
 | Constant | Default | Description |
 |----------|---------|-------------|
-| `MAX_CONTEXT_TURNS` | `10` | Max recent turn pairs sent to the LLM |
+| `MAX_CONTEXT_TURNS` | `20` | Max recent turn pairs sent to the LLM |
 
 
 ## 11. Terminal UX
