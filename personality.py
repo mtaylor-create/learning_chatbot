@@ -7,7 +7,6 @@ import sqlite3
 
 from config import (
     DEFAULT_PERSONALITY,
-    EVOLVE_EVERY_N_TURNS,
     PERSONALITY_STEP_SIZE,
     SQLITE_PATH,
     TRAIT_DEFINITIONS,
@@ -54,14 +53,11 @@ class PersonalityStore:
             if defn is None:
                 continue
             if value > 0.7:
-                lines.append(f"- {defn['high']}.")
+                lines.append(f"- {defn['high_prompt']}")
             elif value < 0.3:
-                lines.append(f"- {defn['low']}.")
+                lines.append(f"- {defn['low_prompt']}")
             else:
-                lines.append(
-                    f"- You balance between {defn['low'].lower()} and "
-                    f"{defn['high'].lower()}."
-                )
+                lines.append(f"- {defn['mid_prompt']}")
         return "\n".join(lines)
 
     def evolve(self, model, recent_messages):

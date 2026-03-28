@@ -46,7 +46,7 @@ class TestBuildSystemPrompt:
 
         prompt = build_system_prompt(personality, memory, "Hi")
         assert "Guidelines:" in prompt
-        assert "natural and conversational" in prompt
+        assert "Speak naturally" in prompt
 
 
 class TestSlashCommands:

@@ -26,8 +26,6 @@ class TestPersonalityStore:
     def test_default_traits(self, tmp_personality):
         traits = tmp_personality.get_traits()
         assert traits == DEFAULT_PERSONALITY
-        for v in traits.values():
-            assert v == 0.5
 
     def test_get_traits_idempotent(self, tmp_personality):
         t1 = tmp_personality.get_traits()
@@ -46,8 +44,10 @@ class TestPersonalityStore:
     def test_build_personality_block_default(self, tmp_personality):
         block = tmp_personality.build_personality_block()
         assert "Your current personality:" in block
-        # All at 0.5 → balanced descriptions
-        assert "balance" in block.lower()
+        # Default Asimov-inspired personality: formality is high (0.8),
+        # humor is low (0.2), others are mid-range
+        assert "deliberate precision" in block.lower()  # high formality
+        assert "literal-minded" in block.lower()  # low humor
 
     def test_build_personality_block_high_traits(self, tmp_personality):
         high = {k: 0.9 for k in DEFAULT_PERSONALITY}
@@ -60,7 +60,7 @@ class TestPersonalityStore:
         low = {k: 0.1 for k in DEFAULT_PERSONALITY}
         tmp_personality._save_traits(low)
         block = tmp_personality.build_personality_block()
-        assert "neutral" in block.lower() or "distant" in block.lower()
+        assert "reserved" in block.lower() or "analytical" in block.lower()
 
 
 class TestEvolution:
