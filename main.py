@@ -22,20 +22,25 @@ from personality import PersonalityStore
 
 
 def build_system_prompt(personality, memory, user_input):
-    """Assemble the system prompt from personality + retrieved memories."""
+    """Assemble the system prompt from personality + retrieved memories.
+
+    Returns (system_prompt, fetched_memories) where fetched_memories is a list
+    of (id, document) tuples from the vector database.
+    """
     personality_block = personality.build_personality_block()
 
-    memories = memory.retrieve(user_input)
-    if memories:
-        mem_lines = "\n".join(f"- {m}" for m in memories)
+    fetched = memory.retrieve_with_ids(user_input)
+    if fetched:
+        mem_lines = "\n".join(f"- {doc}" for _, doc in fetched)
         memory_block = MEMORY_BLOCK_WITH_MEMORIES.format(memories=mem_lines)
     else:
         memory_block = MEMORY_BLOCK_EMPTY
 
-    return SYSTEM_PROMPT_TEMPLATE.format(
+    prompt = SYSTEM_PROMPT_TEMPLATE.format(
         personality_block=personality_block,
         memory_block=memory_block,
     )
+    return prompt, fetched
 
 
 def print_traits(personality):
@@ -47,7 +52,84 @@ def print_traits(personality):
         print(f"  {name:12s}: {bar} {value:.2f}")
 
 
-def handle_slash_command(cmd, personality, memory):
+def enter_debug_mode(memory, last_fetched_memories):
+    """Enter debug mode: display fetched memories and allow deletion/modification."""
+    print(f"\n{COLOR_DIM}--- Debug Mode ---{COLOR_RESET}")
+
+    if not last_fetched_memories:
+        print(f"{COLOR_DIM}No memories were fetched in the previous interaction.{COLOR_RESET}")
+    else:
+        print(f"{COLOR_DIM}Memories fetched in last interaction:{COLOR_RESET}")
+        for i, (mem_id, doc) in enumerate(last_fetched_memories, 1):
+            print(f"  {i}. {doc}")
+
+    print(f"\n{COLOR_DIM}Commands: del N, del all, mod N, resume{COLOR_RESET}\n")
+
+    while True:
+        try:
+            cmd = input(f"{COLOR_BLUE}debug> {COLOR_RESET}").strip()
+        except (KeyboardInterrupt, EOFError):
+            print(f"\n{COLOR_DIM}Exiting debug mode.{COLOR_RESET}")
+            break
+
+        if not cmd:
+            continue
+
+        cmd_lower = cmd.lower()
+
+        if cmd_lower == "resume":
+            print(f"{COLOR_DIM}Resuming conversation.{COLOR_RESET}\n")
+            break
+
+        if cmd_lower == "del all":
+            memory.clear()
+            last_fetched_memories.clear()
+            print(f"{COLOR_DIM}All memories deleted.{COLOR_RESET}")
+            continue
+
+        if cmd_lower.startswith("del "):
+            try:
+                n = int(cmd_lower[4:].strip())
+            except ValueError:
+                print(f"{COLOR_DIM}Invalid number. Usage: del N{COLOR_RESET}")
+                continue
+            if n < 1 or n > len(last_fetched_memories):
+                print(f"{COLOR_DIM}Out of range. Pick 1-{len(last_fetched_memories)}.{COLOR_RESET}")
+                continue
+            mem_id, doc = last_fetched_memories[n - 1]
+            memory.delete_memory(mem_id)
+            last_fetched_memories.pop(n - 1)
+            print(f"{COLOR_DIM}Deleted: {doc}{COLOR_RESET}")
+            continue
+
+        if cmd_lower.startswith("mod "):
+            try:
+                n = int(cmd_lower[4:].strip())
+            except ValueError:
+                print(f"{COLOR_DIM}Invalid number. Usage: mod N{COLOR_RESET}")
+                continue
+            if n < 1 or n > len(last_fetched_memories):
+                print(f"{COLOR_DIM}Out of range. Pick 1-{len(last_fetched_memories)}.{COLOR_RESET}")
+                continue
+            mem_id, old_doc = last_fetched_memories[n - 1]
+            print(f"{COLOR_DIM}Current: {old_doc}{COLOR_RESET}")
+            try:
+                new_text = input(f"{COLOR_BLUE}New text: {COLOR_RESET}").strip()
+            except (KeyboardInterrupt, EOFError):
+                print(f"\n{COLOR_DIM}Modification cancelled.{COLOR_RESET}")
+                continue
+            if not new_text:
+                print(f"{COLOR_DIM}Empty input — no change made.{COLOR_RESET}")
+                continue
+            memory.update_memory(mem_id, new_text)
+            last_fetched_memories[n - 1] = (mem_id, new_text)
+            print(f"{COLOR_DIM}Updated memory #{n}.{COLOR_RESET}")
+            continue
+
+        print(f"{COLOR_DIM}Unknown command. Use: del N, del all, mod N, resume{COLOR_RESET}")
+
+
+def handle_slash_command(cmd, personality, memory, last_fetched_memories):
     """Handle slash commands. Return True if the command was recognized."""
     cmd = cmd.strip().lower()
     if cmd == "/traits":
@@ -55,6 +137,9 @@ def handle_slash_command(cmd, personality, memory):
         return True
     if cmd == "/memories":
         print(f"  Total memories stored: {memory.count()}")
+        return True
+    if cmd == "/debug":
+        enter_debug_mode(memory, last_fetched_memories)
         return True
     return False
 
@@ -97,12 +182,13 @@ def main():
     print(f"{COLOR_DIM}Memories stored: {memory.count()}{COLOR_RESET}")
     print()
     print(f"Type a message to start chatting.")
-    print(f"Commands: /traits, /memories")
+    print(f"Commands: /traits, /memories, /debug")
     print(f"Type 'quit' or 'exit' to leave.\n")
 
     # --- Chat loop ---
     history = []
     turn_count = 0
+    last_fetched_memories = []
 
     try:
         while True:
@@ -121,11 +207,11 @@ def main():
                 break
 
             if user_input.startswith("/"):
-                if handle_slash_command(user_input, personality, memory):
+                if handle_slash_command(user_input, personality, memory, last_fetched_memories):
                     continue
 
             # Build system prompt
-            system_prompt = build_system_prompt(personality, memory, user_input)
+            system_prompt, last_fetched_memories = build_system_prompt(personality, memory, user_input)
 
             # Add user message to history
             history.append({"role": "user", "content": user_input})

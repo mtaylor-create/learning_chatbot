@@ -50,6 +50,31 @@ class MemoryStore:
         results = self._collection.query(query_texts=[query], n_results=k)
         return results["documents"][0] if results["documents"] else []
 
+    def retrieve_with_ids(self, query, top_k=MEMORY_TOP_K):
+        """Return the top_k most relevant memories as (id, document) tuples."""
+        total = self._collection.count()
+        if total == 0:
+            return []
+        k = min(top_k, total)
+        results = self._collection.query(query_texts=[query], n_results=k)
+        if not results["documents"] or not results["documents"][0]:
+            return []
+        ids = results["ids"][0]
+        docs = results["documents"][0]
+        return list(zip(ids, docs))
+
+    def delete_memory(self, memory_id):
+        """Delete a single memory by its ChromaDB ID."""
+        self._collection.delete(ids=[memory_id])
+
+    def update_memory(self, memory_id, new_text):
+        """Replace the document text of a memory, preserving its ID."""
+        self._collection.update(
+            ids=[memory_id],
+            documents=[new_text],
+            metadatas=[{"timestamp": time.time()}],
+        )
+
     def count(self):
         """Return the total number of stored memories."""
         return self._collection.count()

@@ -158,9 +158,25 @@ avoid ChromaDB errors.
 
 Return the total number of stored memories.
 
+#### `retrieve_with_ids(query: str, top_k: int = MEMORY_TOP_K) → list[tuple[str, str]]`
+
+Like `retrieve`, but returns a list of `(id, document)` tuples so callers can
+reference specific memories for deletion or modification. Used by the debug mode
+feature.
+
+#### `delete_memory(memory_id: str)`
+
+Delete a single memory from ChromaDB by its document ID.
+
+#### `update_memory(memory_id: str, new_text: str)`
+
+Replace the document text of an existing memory, preserving its ChromaDB ID.
+Updates the timestamp metadata to the current time.
+
 #### `clear()`
 
-Delete and recreate the collection. Used by the `--reset` flag.
+Delete and recreate the collection. Used by the `--reset` flag and `del all`
+in debug mode.
 
 ### Deduplication
 
@@ -416,6 +432,32 @@ After the loop exits, call `personality.close()` to close the SQLite connection.
 |---------|--------|
 | `/traits` | Print all five personality traits with their current values and a visual bar (e.g., `warmth: █████████░░░░░░░░░░░ 0.45`). Do NOT send to the LLM. |
 | `/memories` | Print the total memory count. Do NOT send to the LLM. |
+| `/debug` | Enter debug mode (see below). Do NOT send to the LLM. |
+
+#### Debug Mode
+
+Typing `/debug` enters an interactive debug mode that allows the user to inspect
+and manage the memories fetched from the vector database during the previous
+conversation turn. While in debug mode, no input is sent to the LLM.
+
+**On entry**, the app prints all memories that were retrieved (via
+`retrieve_with_ids`) in the previous interaction, numbered starting at 1. If no
+memories were fetched (e.g., at the start of a session before any turn), a
+message indicates this.
+
+**Debug mode commands:**
+
+| Command | Action |
+|---------|--------|
+| `del N` | Delete memory number N from the vector database. |
+| `del all` | Delete **all** memories from the vector database (calls `MemoryStore.clear()`). |
+| `mod N` | Prompt the user for replacement text, then update memory N in the vector database. |
+| `resume` | Exit debug mode and return to normal conversation. |
+
+The debug prompt is displayed as `debug> ` to distinguish it from the normal
+input prompt. After a deletion or modification, the numbered list is updated
+in-place (indices shift down after a `del`). Unknown commands print a short
+help line.
 
 #### Configuration
 
@@ -487,7 +529,8 @@ The `--reset` flag clears both stores, providing a clean-slate option.
 These are explicitly NOT part of the initial implementation but are noted for
 architectural awareness:
 
-- `/forget <topic>` command to selectively remove memories.
+- `/forget <topic>` command to selectively remove memories by topic (debug mode
+  covers ID-based deletion; this would add semantic search-based deletion).
 - Session logging to SQLite for conversation replay.
 - Streaming responses from Ollama for lower perceived latency.
 - A web UI (Flask or Gradio) as an alternative to the terminal.
