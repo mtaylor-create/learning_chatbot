@@ -28,7 +28,7 @@ class TestBuildSystemPrompt:
         assert "Warm and caring" in prompt
         assert "The user likes cats." in prompt
         assert "The user's name is Jordan." in prompt
-        assert "Things you remember about the user" in prompt
+        assert "Things you know about the user" in prompt
         assert len(fetched) == 2
 
     def test_empty_memory_block(self):

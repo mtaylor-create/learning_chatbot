@@ -119,12 +119,35 @@ def _build_evolution_prompt(traits, transcript):
         f"- {name}: low = {d['low']}, high = {d['high']}"
         for name, d in TRAIT_DEFINITIONS.items()
     )
+    defaults_str = json.dumps(DEFAULT_PERSONALITY, indent=2)
     return f"""\
-You are analyzing a conversation to determine how the AI companion's personality \
-should evolve based on the user's interaction style and preferences.
+You are analyzing a conversation to decide if the AI companion's personality \
+traits should shift based on the user's behavior and preferences.
+
+IMPORTANT RULES:
+- Most traits should NOT change on any given evaluation. Default to 0.
+- Only output a non-zero value when there is CLEAR, SPECIFIC evidence in the \
+conversation below.
+- EXPLICIT user feedback is the strongest signal. If the user says things like \
+"keep it short", "be funnier", "too formal", "stop asking so many questions", \
+etc., respond with a strong adjustment (0.7 to 1.0 magnitude) in the \
+direction they indicated.
+- IMPLICIT signals are weaker (0.1 to 0.3 magnitude). Examples: user \
+consistently writes very short messages (verbosity might decrease slightly), \
+user uses lots of casual slang (formality might decrease slightly).
+- If there is NO clear signal for a trait, you MUST output 0.
+
+Special note on verbosity: ONLY increase verbosity if the user explicitly asks \
+for more detail or longer responses. Short user messages and casual \
+conversation are NOT reasons to increase verbosity. When uncertain, bias \
+toward 0 or a slight decrease.
 
 Current trait scores (0.0 to 1.0):
 {json.dumps(traits, indent=2)}
+
+Starting defaults (for reference — traits should not drift far from these \
+without clear reason):
+{defaults_str}
 
 Trait definitions:
 {trait_defs}
@@ -132,15 +155,9 @@ Trait definitions:
 Recent conversation:
 {transcript}
 
-Based on how the user communicates and what they seem to prefer, suggest \
-adjustments to each trait. Respond with ONLY a JSON object mapping each trait \
-name to a float between -1.0 and 1.0, where:
-- Negative values mean the trait should decrease
-- Positive values mean the trait should increase
-- 0 means no change
-- The magnitude indicates confidence (1.0 = very confident, 0.1 = slight nudge)
-
-Respond with ONLY the JSON object, no other text."""
+Respond with ONLY a JSON object mapping each trait name to a float in \
+[-1.0, 1.0]. Negative = decrease, positive = increase, 0 = no change. \
+No other text."""
 
 
 def _parse_evolution_response(raw):
